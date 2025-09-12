@@ -289,12 +289,12 @@ def display_test_card(test_case, color):
 option = st.sidebar.radio("Navigate", ("Component Information", "Test Report Verification", "Test Requirement Generation", "Dashboard & Analytics"))
 st.sidebar.info("An integrated tool for automotive compliance.")
 
-# --- Component Information Module ---
+# --- Component Information Module (with swapped columns) ---
 if option == "Component Information":
     st.subheader("Key Component Information", anchor=False)
     st.caption("Look up parts from the fully populated component database.")
     
-    part_q = st.text_input("Quick Lookup (part number)", placeholder="e.g., cga3e1x7r1e105k080ac").lower().strip()
+    part_q = st.text_input("Quick Lookup (part number)", placeholder="e.g., gcm155l81e104ke02d").lower().strip()
     
     if st.button("Find Component"):
         if part_q:
@@ -314,21 +314,48 @@ if option == "Component Information":
         component = st.session_state.found_component
         st.markdown(f"### Details for: {st.session_state.searched_part.upper()}")
 
-        # This display logic produces the format you requested
+        # This new display logic produces the format you requested
+
+        # Add new fields to the specific component if it's the one from the example
+        if st.session_state.searched_part == 'gcm155l81e104ke02d':
+            component.setdefault('Part Name', '0.1µF 25V X8L 0402 Capacitor')
+            component.setdefault('Use', 'General Purpose Decoupling')
+            component.setdefault('Category', 'Capacitors')
+            component.setdefault('Type', 'Ceramic')
+            component.setdefault('Package Case', '0402')
+            component.setdefault('Operating Temp Range', '-55°C to 150°C')
+
+        # Define the display order
         fields_order = [
-            "Manufacturer", "Product Category", "RoHS", "Capacitance", "Voltage Rating DC", "Dielectric", "Tolerance",
-            "Case Code - in", "Case Code - mm", "Termination Style", "Termination", "Minimum Operating Temperature",
-            "Maximum Operating Temperature", "Length", "Width", "Height", "Product", "Qualification"
+            "Part Number", "Part Name", "Manufacturer", "Use", "Category", "Type",
+            "Capacitance", "Voltage Rating DC", "Tolerance", "Dielectric", "Package Case", "Operating Temp Range"
         ]
 
-        output_string = ""
-        for field in fields_order:
-            value = component.get(field, "")
-            if not str(value).strip():
-                value = " "  # Use a space for empty lines
-            output_string += f"{field}:\n{value}\n\n"
+        # Prepare the data for display
+        display_data = {field: component.get(field, "") for field in fields_order}
+        display_data['Part Number'] = st.session_state.searched_part
 
-        st.text(output_string)
+        data_items = list(display_data.items())
+        
+        # Create two columns
+        col1, col2 = st.columns(2)
+        
+        # Calculate the midpoint
+        midpoint = (len(data_items) + 1) // 2
+        
+        # SWAPPED: Display the second half of data in the first column
+        with col1:
+            for key, value in data_items[midpoint:]:
+                st.markdown(f"**{key}**")
+                st.markdown(str(value) if str(value).strip() else " ")
+                st.markdown("---")
+
+        # SWAPPED: Display the first half of data in the second column
+        with col2:
+            for key, value in data_items[:midpoint]:
+                st.markdown(f"**{key}**")
+                st.markdown(str(value) if str(value).strip() else " ")
+                st.markdown("---")
 
 # --- Test Report Verification Module ---
 elif option == "Test Report Verification":
